@@ -19,3 +19,8 @@ Thesis/Python/archive/
 Python/.ipynb_checkpoints
 data/m4
 data/results
+Python/transformer
+data/news_eod.csv
+data/news_arc.csv
+data/news_arc_sentiment.csv
+data/news_eod_sentiment.csv
