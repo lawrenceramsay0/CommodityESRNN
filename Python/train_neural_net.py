@@ -73,6 +73,25 @@ def train_net(
 
     dat = dat.copy().drop(y_remove, axis=1)#.astype('float64')
     
+    #Differencing the data
+    #https://stackoverflow.com/questions/58782015/how-to-invert-first-order-differencing-in-python
+    
+# =============================================================================
+#     dat = dat.diff().dropna() 
+#     
+#     def invert_transformation(df_train, df_forecast, second_diff=False):
+#         """Revert back the differencing to get the forecast to original scale."""
+#         df_fc = df_forecast.copy()
+#         columns = df_train.columns
+#         for col in columns:        
+#             # Roll back 2nd Diff
+#             if second_diff:
+#                 df_fc[str(col)+'_1d'] = (df_train[col].iloc[-1]-df_train[col].iloc[-2]) + df_fc[str(col)+'_2d'].cumsum()
+#             # Roll back 1st Diff
+#             df_fc[str(col)+'_forecast'] = df_train[col].iloc[-1] + df_fc[str(col)+'_1d'].cumsum()
+#         return df_fc
+# =============================================================================
+    
     if run_fwd_selection:
         X_train, X_val, X_test_pred, y_train, y_val, y_test, reg_model, subsets = prep_data(dat = dat, y_name = y_name, dte = dte, 
                                                                                        read_pred_values = read_pred_values,
@@ -87,52 +106,14 @@ def train_net(
                                                                    read_subset_values = read_subset_values, max_subset_cols = max_subset_cols,
                                                                    rss_cutoff = rss_cutoff) 
        
+# =============================================================================
+#     X_test_pred_diff = X_test_pred.diff().dropna() 
+#     X_train_diff = X_train.diff().dropna() 
+#     
+#     y_train_diff = y_train.diff().dropna() 
+#     y_test_diff = y_test.diff().dropna() 
+# =============================================================================
     
-# =============================================================================
-#     X_train, X_val, X_test, y_train, y_val, y_test = train_val_test_split_idx(df = dat, target_col = y_name, dte = dte,
-#                                                                               val_days = val_days, test_days = test_days)
-# 
-#     
-#     #Subset data 
-#     if run_corr_cutoff:
-#         X_train = corr_cutoff(X_train, y_train, read_corr_values = read_corr_values, verbose = verbose, dte = dte, 
-#                               xtra_desc = xtra_desc)
-#         
-#         X_test = X_test[X_train.columns]        
-#         X_val = X_val[X_train.columns] 
-#     
-#     if run_vif:
-#         X_train = vif_correlation_subset(X_train, read_vif_values = read_vif_values, verbose = verbose, dte = dte, 
-#                               xtra_desc = xtra_desc)
-#         
-#         X_test = X_test[X_train.columns]        
-#         X_val = X_val[X_train.columns] 
-# 
-#     if run_fwd_selection:
-#         X_train, reg_model, subsets = fwd_subset(X_train, y_train, y_name, verbose = verbose, dte = dte,
-#                                                  read_subset_values = read_subset_values, xtra_desc = xtra_desc)
-#         
-#         X_test = X_test[X_train.columns]
-#         X_val = X_val[X_train.columns]
-# 
-# 
-#     if read_pred_values:
-#         X_test_pred = pd.read_csv("data/" + dte.strftime("%Y%m%d") + xtra_desc + "_X_test_pred.csv", index_col = 0)
-# 
-#     else:
-#         X_test_pred = predict_features(X_train, X_test, test_days = test_days, verbose = verbose)
-#         X_test_pred.to_csv("data/" + dte.strftime("%Y%m%d") + xtra_desc + "_X_test_pred.csv")
-#         
-#     if verbose == True:
-#         print(dte)
-#         print("X_train: " + str(X_train.shape) + " " + str(min(X_train.index)) + ">" + str(max(X_train.index)))
-#         print("X_test: " + str(X_test.shape)+ " " + str(min(X_test.index)) + ">" + str(max(X_test.index)))
-#         print("X_val: " + str(X_val.shape)+ " " + str(min(X_val.index)) + ">" + str(max(X_val.index)))
-#         print("y_train: " + str(y_train.shape)+ " " + str(min(y_train.index)) + ">" + str(max(y_train.index)))
-#         print("y_test: " + str(y_test.shape)+ " " + str(min(y_test.index)) + ">" + str(max(y_test.index)))
-#         print("y_val: " + str(y_val.shape)+ " " + str(min(y_val.index)) + ">" + str(max(y_val.index)))
-# =============================================================================
-            
     class EarlyStopper:
         def __init__(self, patience=1, min_delta=0):
             self.patience = patience
@@ -155,32 +136,32 @@ def train_net(
     scaler = MinMaxScaler()
     #Create tensors from subset of data
     X_train_arr = scaler.fit_transform(X_train)
-    X_val_arr = scaler.transform(X_val)
+    # = scaler.transform(X_val)
     X_test_arr = scaler.transform(X_test_pred)
 
     y_train_arr = scaler.fit_transform(y_train)
-    y_val_arr = scaler.transform(y_val)
+    #y_val_arr = scaler.transform(y_val)
     y_test_arr = scaler.transform(y_test)
     
     # make training and test sets in torch
     X_train_subset_tensor = torch.from_numpy(X_train_arr).type(torch.Tensor)
     X_test_subset_tensor = torch.from_numpy(X_test_arr).type(torch.Tensor)
-    X_val_subset_tensor = torch.from_numpy(X_val_arr).type(torch.Tensor)
+    #X_val_subset_tensor = torch.from_numpy(X_val_arr).type(torch.Tensor)
     y_train_tensor = torch.from_numpy(y_train_arr).type(torch.Tensor)
     y_test_tensor = torch.from_numpy(y_test_arr).type(torch.Tensor)
-    y_val_tensor = torch.from_numpy(y_val_arr).type(torch.Tensor)
+    #y_val_tensor = torch.from_numpy(y_val_arr).type(torch.Tensor)
 
     X_train_subset_tensor = X_train_subset_tensor[:,:,None]
     X_test_subset_tensor = X_test_subset_tensor[:,:,None]
-    X_val_subset_tensor = X_val_subset_tensor[:,:,None]
+    #X_val_subset_tensor = X_val_subset_tensor[:,:,None]
 
     if verbose == True:
         print('x_train.shape = ',X_train_subset_tensor.shape)
         print('y_train.shape = ',y_train_tensor.shape)
         print('x_test.shape = ',X_test_subset_tensor.shape)
         print('y_test.shape = ',y_test_tensor.shape)
-        print('x_val.shape = ',X_val_subset_tensor.shape)
-        print('y_val.shape = ',y_val_tensor.shape)
+        #print('x_val.shape = ',X_val_subset_tensor.shape)
+        #print('y_val.shape = ',y_val_tensor.shape)
 
     if model_name == "lstm":
         model = LSTM(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, 
@@ -288,40 +269,42 @@ def train_net(
     # make test predictions
     if model_name == "esrnn" and output_pred_from_esrnn == True:
         y_test_pred = model(X_test_subset_tensor)[0]
-        y_val_pred = model(X_val_subset_tensor)[0]
+        #y_val_pred = model(X_val_subset_tensor)[0]
     else:
         y_test_pred = model(X_test_subset_tensor)
-        y_val_pred = model(X_val_subset_tensor)
+        #y_val_pred = model(X_val_subset_tensor)
         
     # invert predictions
     y_train_pred = scaler.inverse_transform(y_train_pred.detach().numpy())
     y_train_det = scaler.inverse_transform(y_train_tensor.detach().numpy())
     y_test_pred = scaler.inverse_transform(y_test_pred.detach().numpy())
     y_test_det = scaler.inverse_transform(y_test_tensor.detach().numpy())
+    
+    
 
     # invert predictions
-    y_val_pred = scaler.inverse_transform(y_val_pred.detach().numpy())
-    y_val_det = scaler.inverse_transform(y_val_tensor.detach().numpy())
+    #y_val_pred = scaler.inverse_transform(y_val_pred.detach().numpy())
+    #y_val_det = scaler.inverse_transform(y_val_tensor.detach().numpy())
 
     # calculate root mean squared error
     train_rmse = math.sqrt(mean_squared_error(y_train_det[:,0], y_train_pred[:,0]))
     test_rmse = math.sqrt(mean_squared_error(y_test_det[:,0], y_test_pred[:,0]))
-    val_rmse = math.sqrt(mean_squared_error(y_val_det[:,0], y_val_pred[:,0]))
+    #val_rmse = math.sqrt(mean_squared_error(y_val_det[:,0], y_val_pred[:,0]))
     
     # calculate smape
     train_smape = smape(y_train_det[:,0], y_train_pred[:,0])
     test_smape = smape(y_test_det[:,0], y_test_pred[:,0])
-    val_smape = smape(y_val_det[:,0], y_val_pred[:,0])
+    #val_smape = smape(y_val_det[:,0], y_val_pred[:,0])
     
     # calculate mase
     train_mase = mean_absolute_percentage_error(y_train_det[:,0], y_train_pred[:,0])
     test_mase = mean_absolute_percentage_error(y_test_det[:,0], y_test_pred[:,0])
-    val_mase = mean_absolute_percentage_error(y_val_det[:,0], y_val_pred[:,0])
+    #val_mase = mean_absolute_percentage_error(y_val_det[:,0], y_val_pred[:,0])
     
     if verbose == True:
         print('Test Score: %.2f RMSE' % (test_rmse))
         print('Train Score: %.2f RMSE' % (train_rmse))
-        print('Validation Score: %.2f RMSE' % (val_rmse))
+        #print('Validation Score: %.2f RMSE' % (val_rmse))
         
         # Visualising the results
         figure, axes = plt.subplots()

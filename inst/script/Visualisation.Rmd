@@ -13,7 +13,7 @@ devtools::load_all()
 ```
 
 ```{r}
-fcst_all <- readr::read_csv("data/fcst_all.csv", show_col_types = F) %>%
+fcst_all <- readr::read_csv("output/crude/20231216tgt_crd_fcst_all.csv", show_col_types = F) %>%
   setnames(., old = "...1", new = "idx") %>%
   data.table()
 
@@ -27,11 +27,27 @@ datr <- readr::read_csv("data/dat_raw.csv", show_col_types = F) %>%
 datft <- readr::read_csv("data/dat_ft.csv", show_col_types = F) %>%
   data.table()
 
+mod_rem <- unique(fcst_all$model_name)[!unique(fcst_all$model_name) %in% 
+                                         c("Arima_Best", "combined", "reg", "gru_grusubset", "esrnn_ftsubset",
+                                           "rnn_rnnsubset", "rnn_rnnsubset")] 
+
 vis <-
   rbind(
-  datr[, .(dte, val = tgt_crd, step = 0)],
-  fcst_all[, .(dte, val = y_pred, step = step + 1)]) %>%
-  .[dte > "2022-09-01"]
+  datr[, .(Date = dte, Price = tgt_crd, model_name = "target", step = 0)],
+  fcst_all[, .(Date = dte, Price = y_pred, model_name, step = step + 1)]) %>%
+  .[Date > "2022-09-01"] #%>%
+  #.[!model_name %chin% mod_rem] %>%
+  #.[, mod_step := paste(model_name, step, sep = "_")]
+
+
+
+# vis <- merge(datr[, .(dte, val = tgt_crd)], 
+#              fcst_all[, .(dte, y_pred, model_name, step = step + 1)], 
+#               by = "dte", all.x = T) %>%
+#   .[!model_name %chin% mod_rem] %>%
+#   .[dte >= "2021-01-01"] %>%
+#   .[, mod_step := paste(model_name, step, sep = "_")]
+
 ```
 
 
@@ -39,12 +55,67 @@ vis <-
 
 ### Together
 
-```{r}
+```{r, fig.height=5, fig.width=8}
 
-ggplot(vis) +
-  geom_line(aes(dte,val, color = factor(step)), size = 1)
+plot_list <- list()
+
+model_names <- data.table(model_name_tech = c("Arima_Best", "combined", "reg", "rnn_rnnsubset", "esrnn_ftsubset"),
+                  model_name_pretty = c("ARIMA", "Combined", "OLS", "RNN", "ESRNN"))
+
+for (mod in model_names$model_name_tech) {
+  
+  p <- 
+    vis %>%
+    .[model_name %chin% c(mod, "target")] %>% 
+    ggplot() +
+    geom_line(aes(Date, Price, color = factor(step)), size = 1) +
+    theme_minimal() +
+    scale_color_brewer(palette = "Dark2") +
+    theme(legend.position = "none", axis.title.x=element_blank()) +
+    labs(title = model_names[model_name_tech == mod, model_name_pretty]
+         )
+  
+  plot_list[[mod]] <- p
+  
+}
+
+(plot_list[["Arima_Best"]] | plot_list[["combined"]]) / (plot_list[["reg"]] | plot_list[["rnn_rnnsubset"]]) / plot_list[["esrnn_ftsubset"]]
 
 ```
+
+### Features
+
+```{r}
+
+pred_files <- list.files("data") %>%
+  .[stringr::str_detect(., "pred")] %>%
+  .[!stringr::str_detect(., "hyper")]
+
+pred_data_list <- list()
+
+pred_data <- vector()
+
+for (i in 1:length(pred_files)) {
+  
+  pf = pred_files[i]
+  
+  pred_data_list[[i]] <- names(readr::read_csv(paste0("data/", pf), show_col_types = F))
+  
+  pred_data <- c(pred_data, names(readr::read_csv(paste0("data/", pf), show_col_types = F))) 
+  
+}
+
+
+pred_cols <- data.table(pred = pred_data) %>%
+  .[, .N, by = "pred"] %>%
+  .[order(-N)]
+
+
+readr::write_csv(pred_cols, "Writeup/Images/pred_cols.csv")
+# pred_cols <- rbind(pred_data_list)
+
+```
+
 
 ### Facet
 

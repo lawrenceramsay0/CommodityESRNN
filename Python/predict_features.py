@@ -12,6 +12,7 @@ from itertools import product
 import numpy as np
 import math
 from numba import jit, cuda
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 jit(target_backend='cuda') 
 def predict_features(X_train, X_test, test_days, verbose = True):
@@ -58,9 +59,18 @@ def predict_features(X_train, X_test, test_days, verbose = True):
             print("Best Order (p, d, q):", best_order)
             print("Best AIC:", round(best_aic,0))
         
-        model = ARIMA(y, order=best_order)
+        #https://machinelearningmastery.com/decompose-time-series-data-trend-seasonality/
+    
+        yd = seasonal_decompose(y, model='additive')
+        
+        model_sea = ARIMA(yd.seasonal, order=best_order)
+        model_fit_sea = model_sea.fit()
+        model_pred_sea = model_fit_sea.forecast(steps = int(test_days), dates = X_test.index)
+        
+        #trend = yd.trend.fillna(method='ffill').fillna(method='bfill')
+        model = ARIMA(y, order=best_order, exog = yd.seasonal)
         model_fit = model.fit()
-        model_pred = model_fit.forecast(steps = int(test_days), dates = X_test.index)
+        model_pred = model_fit.forecast(steps = int(test_days), dates = X_test.index, exog = model_pred_sea, trend = 'nc')
         
         X_test_pred[X_test_pred.columns[i]] = model_pred.values
     

@@ -39,7 +39,9 @@ def train_stat(
             test_days = 50,
             read_pred_values = False,
             run_corr_cutoff = False,
-            read_corr_values = False):
+            read_corr_values = False,            
+            max_subset_cols = None,
+            rss_cutoff = 5):
     
     
     fcst_y_only = pd.DataFrame()
@@ -53,9 +55,19 @@ def train_stat(
     dat_sc = pd.DataFrame(scaler.fit_transform(dat), index = dat.index, columns=dat.columns)
     dat_sc[y_name] = dat[y_name]
     
-    X_train, X_val, X_test_pred, y_train, y_val, y_test, reg_model, subsets = prep_data(dat = dat, y_name = y_name, dte = dte, 
-                                                                                        read_pred_values = read_pred_values,
-                                                               val_days = val_days, test_days = val_days, xtra_desc = xtra_desc)
+    if run_fwd_selection:
+        X_train, X_val, X_test_pred, y_train, y_val, y_test, reg_model, subsets = prep_data(dat = dat, y_name = y_name, dte = dte, 
+                                                                                       read_pred_values = read_pred_values,
+                                                                   val_days = val_days, test_days = test_days, xtra_desc = xtra_desc,
+                                                                   run_fwd_selection = run_fwd_selection, read_vif_values = read_vif_values,
+                                                                   read_subset_values = read_subset_values, max_subset_cols = max_subset_cols,
+                                                                   rss_cutoff = rss_cutoff) 
+    else:
+        X_train, X_val, X_test_pred, y_train, y_val, y_test = prep_data(dat = dat, y_name = y_name, dte = dte, read_pred_values = read_pred_values,
+                                                                   val_days = val_days, test_days = test_days, xtra_desc = xtra_desc,
+                                                                   run_fwd_selection = run_fwd_selection, read_vif_values = read_vif_values,
+                                                                   read_subset_values = read_subset_values, max_subset_cols = max_subset_cols,
+                                                                   rss_cutoff = rss_cutoff) 
     
 # =============================================================================
 #     X_train, X_val, X_test, y_train, y_val, y_test = train_val_test_split_idx(df = dat, target_col = y_name, dte = dte,
@@ -105,27 +117,27 @@ def train_stat(
     y_pred_train_reg = reg_model.predict(X_train) 
 
     y_pred_test_reg = reg_model.predict(X_test_pred) 
-    y_pred_val_reg = reg_model.predict(X_val) 
+    #y_pred_val_reg = reg_model.predict(X_val) 
     
     train_rmse = math.sqrt(mean_squared_error(y_train, y_pred_train_reg))
     test_rmse = math.sqrt(mean_squared_error(y_test, y_pred_test_reg))
-    val_rmse = math.sqrt(mean_squared_error(y_val, y_pred_val_reg))
+    #val_rmse = math.sqrt(mean_squared_error(y_val, y_pred_val_reg))
     
     # calculate smape
-    train_smape = smape(y_train, y_train)
-    test_smape = smape(y_test, y_test)
-    val_smape = smape(y_val, y_val)
+    train_smape = smape(y_train.values.flatten(), y_pred_train_reg.values)
+    test_smape = smape(y_test.values.flatten(), y_pred_test_reg.values)
+    #val_smape = smape(y_val.values.flatten(), y_pred_val_reg.values)
     
     # calculate mase
-    train_mase = mean_absolute_percentage_error(y_train, y_train)
-    test_mase = mean_absolute_percentage_error(y_test, y_test)
-    val_mase = mean_absolute_percentage_error(y_val, y_val)
+    train_mase = mean_absolute_percentage_error(y_train, y_pred_train_reg)
+    test_mase = mean_absolute_percentage_error(y_test, y_pred_test_reg)
+    #val_mase = mean_absolute_percentage_error(y_val, y_pred_val_reg)
     
     
     if verbose == True:
         print('Regression Train Score: %.2f RMSE' % (train_rmse))
         print('Regression Test Score: %.2f RMSE' % (test_rmse))
-        print('Regression Validation Score: %.2f RMSE' % (val_rmse))
+        #print('Regression Validation Score: %.2f RMSE' % (val_rmse))
         
         plt.plot(subsets["r_sq"], label="r squared")
         plt.legend()
@@ -137,7 +149,7 @@ def train_stat(
 
         axes.plot(pd.to_datetime(y_test.index), y_test.values, color = 'red', label = 'Real')
         axes.plot(pd.to_datetime(y_test.index), y_pred_test_reg, color = 'blue', label = 'Predicted')
-        plt.title("Regression" + xtra_desc + str(dte) + ' prediction')
+        plt.title("Regression" + xtra_desc + dte.strftime("%Y%m%d") + ' prediction')
         plt.xlabel('Time')
         plt.ylabel('Price')
         plt.legend()

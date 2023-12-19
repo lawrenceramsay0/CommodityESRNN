@@ -15,6 +15,8 @@ from statsmodels.tsa.stattools import adfuller
 from itertools import product
 import numpy as np
 import statsmodels.api as sm
+from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error
+from error_metrics import smape
 
 def train_y_only(
             dat,
@@ -142,8 +144,8 @@ def train_y_only(
     
     #es damped
     es5 = Holt(y_train, initialization_method="estimated", damped_trend=True).fit()
-    fcst11_test = es4.forecast(len(y_test)).rename(r"ES_alpha=%s" % round(es5.model.params["smoothing_level"],2))
-    fcst11_train = es4.forecast(len(y_train)).rename(r"ES_alpha=%s" % round(es5.model.params["smoothing_level"],2))
+    fcst11_test = es4.forecast(len(y_test)).rename(r"DampedES_alpha=%s" % round(es5.model.params["smoothing_level"],2))
+    fcst11_train = es4.forecast(len(y_train)).rename(r"DampedES_alpha=%s" % round(es5.model.params["smoothing_level"],2))
     
     #Combined 
 
@@ -151,12 +153,12 @@ def train_y_only(
     comb_test["combined"] = comb_test.mean(axis = 1)
 
     comb_train = pd.concat([fcst8_train,  fcst3_train,  fcst11_train], axis = 1)
-    comb_train["combined"] = comb_test.mean(axis = 1)
+    comb_train["combined"] = comb_train.mean(axis = 1)
     
     fcst12_test = comb_test["combined"]
     fcst12_train = comb_train["combined"]
 
-    for i in range(1, 12):
+    for i in range(1, 13):
 
         if verbose == True:
             print(i)
@@ -169,16 +171,27 @@ def train_y_only(
         except AttributeError:
             model_name = fcst_test.columns[0]
         
+        if verbose == True:
+            print(model_name)
+        
         train_rmse = math.sqrt(mean_squared_error(y_train, fcst_train))
         test_rmse = math.sqrt(mean_squared_error(y_test, fcst_test))
-    
+        
+        # calculate smape
+        train_smape = smape(y_train.values.flatten(), fcst_train.values.flatten())
+        test_smape = smape(y_test.values.flatten(), fcst_test.values.flatten())
+        
+        # calculate mase
+        train_mase = mean_absolute_percentage_error(y_train, fcst_train)
+        test_mase = mean_absolute_percentage_error(y_test, fcst_test)
+        
+        
         if verbose == True:
             print(model_name)
             print('Train Score ' + str(i) + ': %.2f RMSE' % (train_rmse))
             print('Test Score ' + str(i) + ': %.2f RMSE' % (test_rmse))
-            
-            print('Test Score: %.2f RMSE' % (test_rmse))
-            print('Train Score: %.2f RMSE' % (train_rmse))
+            print('Train Score ' + str(i) + ': %.2f SMAPE' % (train_smape))
+            print('Test Score ' + str(i) + ': %.2f SMAPE' % (test_smape))
             
             # Visualising the results
             figure, axes = plt.subplots()
@@ -186,7 +199,7 @@ def train_y_only(
 
             axes.plot(pd.to_datetime(y_test.index), y_test.values, color = 'red', label = 'Real')
             axes.plot(pd.to_datetime(y_test.index), fcst_test, color = 'blue', label = 'Predicted')
-            plt.title(str(model_name) + xtra_desc + str(dte) + ' prediction')
+            plt.title(str(model_name) + xtra_desc + dte.strftime("%Y%m%d") + ' prediction')
             plt.xlabel('Time')
             plt.ylabel('Price')
             plt.legend()
@@ -194,8 +207,12 @@ def train_y_only(
             plt.show()
         
         model_score = pd.DataFrame(data = {"model_name": model_name, "step": str(step), "dte": str(dte),
-                                           "train_rmse": train_rmse, "test_rmse":test_rmse}, 
+                                           "train_rmse": train_rmse, "test_rmse":test_rmse,
+                                           "train_smape": train_smape, "test_smape":test_smape,
+                                           "train_mase": train_mase, "test_mase":test_mase
+                                           }, 
                                    index = [model_name + "_" + str(step) + "_" + str(dte)])
+        
         
         fcst = pd.DataFrame(data = {"model_name": str(model_name), "step":[step] * len(y_test), 
                                     "dte" : y_test.index.to_list(), 
