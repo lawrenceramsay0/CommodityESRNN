@@ -51,8 +51,8 @@ train_neural_net = True
 testing = True
 forecast_start_date = date(2022, 12, 1)
 
-y_name = "tgt_crd"
-y_remove = "tgt_irn"
+y_remove = "tgt_crd"
+y_name = "tgt_irn"
 model_name = "lstm"
 #target_cols = ["close_irn", "Close_crd", "high_irn", "low_irn", "high_crd", "low_crd"]
 
@@ -196,45 +196,43 @@ if run_hyper_params_esrnn == True:
             read_subset_values = True
             read_pred_values = True
         
-# =============================================================================
-#         fcst_esrnn_subset, model_score_esrnn_subset_hyper = train_net(dat = datr, dte = dte, step = 1,
-#                                                 y_name = y_name, y_remove = y_remove,
-#                                                 read_vif_values = False, run_vif = False, 
-#                                                 run_fwd_selection = outer_params_grid['subset'][idx], 
-#                                                 read_subset_values = read_subset_values,
-#                                                 num_epochs = hyper_epochs, 
-#                                                 verbose = True,
-#                                                 read_pred_values = read_pred_values,
-#                                                 learning_rate = outer_params_grid['learning_rate'][idx],
-#                                                 model_name = "esrnn",
-#                                                 xtra_desc = "esrnnsubset"+str(outer_params_grid['subset'][idx])+"hyper",
-#                                                 epoch_print = 20, 
-#                                                 dropout = outer_params_grid['dropout_prob'][idx],
-#                                                 esrnn_cell_type = outer_params_grid['cell_type'][idx],
-#                                                 esrnn_alpha_smoothing = outer_params_grid['alpha_smoothing'][idx],
-#                                                 esrnn_beta_smoothing = outer_params_grid['beta_smoothing'][idx],
-#                                                 esrnn_dilations = outer_params_grid['dilations'][idx],
-#                                                 prune_prop = outer_params_grid['prune'][idx],
-#                                                 num_layers = outer_params_grid['num_layers'][idx],
-#                                                 hidden_dim = outer_params_grid['hidden_dim'][idx],
-#                                                 esrnn_no_trend = outer_params_grid['no_trend'][idx],
-#                                                 esrnn_multiplicative_seasonality = outer_params_grid['multiplicative'][idx],
-#                                                 output_pred_from_esrnn=output_pred_from_esrnn,
-#                                                 rss_cutoff=5)
-#     
-#         output_string = create_output_string(model_name = model_name, hidden_dim = list(outer_params_grid.values[idx])[0],
-#             num_layers = list(outer_params_grid.values[idx])[1], dropout_prob = list(outer_params_grid.values[idx])[2],
-#             criterion = list(outer_params_grid.values[idx])[3], prune_prop = list(outer_params_grid.values[idx])[4],
-#             alpha_smoothing = list(outer_params_grid.values[idx])[5], cell_type = list(outer_params_grid.values[idx])[6],
-#             dilations = list(outer_params_grid.values[idx])[7], multiplicative_seasonality = list(outer_params_grid.values[idx])[8],
-#             no_trend = list(outer_params_grid.values[idx])[9], beta_smoothing = list(outer_params_grid.values[idx])[10],
-#             seasonality = list(outer_params_grid.values[idx])[11], subset = list(outer_params_grid.values[idx])[12])
-#         
-#         model_score_esrnn_subset_hyper["hyper"] = output_string
-#         model_score_esrnn_subset_hyper["hyperidx"] = idx
-#         model_score_esrnn_subset_hyper["epochs"] = hyper_epochs
-#         
-# =============================================================================
+        fcst_esrnn_subset, model_score_esrnn_subset_hyper = train_net(dat = datr, dte = dte, step = 1,
+                                                y_name = y_name, y_remove = y_remove,
+                                                read_vif_values = False, run_vif = False, 
+                                                run_fwd_selection = outer_params_grid['subset'][idx], 
+                                                read_subset_values = read_subset_values,
+                                                num_epochs = hyper_epochs, 
+                                                verbose = True,
+                                                read_pred_values = read_pred_values,
+                                                learning_rate = outer_params_grid['learning_rate'][idx],
+                                                model_name = "esrnn",
+                                                xtra_desc = "esrnnsubset"+str(outer_params_grid['subset'][idx])+"hyper",
+                                                epoch_print = 20, 
+                                                dropout = outer_params_grid['dropout_prob'][idx],
+                                                esrnn_cell_type = outer_params_grid['cell_type'][idx],
+                                                esrnn_alpha_smoothing = outer_params_grid['alpha_smoothing'][idx],
+                                                esrnn_beta_smoothing = outer_params_grid['beta_smoothing'][idx],
+                                                esrnn_dilations = outer_params_grid['dilations'][idx],
+                                                prune_prop = outer_params_grid['prune'][idx],
+                                                num_layers = outer_params_grid['num_layers'][idx],
+                                                hidden_dim = outer_params_grid['hidden_dim'][idx],
+                                                esrnn_no_trend = outer_params_grid['no_trend'][idx],
+                                                esrnn_multiplicative_seasonality = outer_params_grid['multiplicative'][idx],
+                                                output_pred_from_esrnn=output_pred_from_esrnn,
+                                                rss_cutoff=5)
+    
+        output_string = create_output_string(model_name = model_name, hidden_dim = list(outer_params_grid.values[idx])[0],
+            num_layers = list(outer_params_grid.values[idx])[1], dropout_prob = list(outer_params_grid.values[idx])[2],
+            criterion = list(outer_params_grid.values[idx])[3], prune_prop = list(outer_params_grid.values[idx])[4],
+            alpha_smoothing = list(outer_params_grid.values[idx])[5], cell_type = list(outer_params_grid.values[idx])[6],
+            dilations = list(outer_params_grid.values[idx])[7], multiplicative_seasonality = list(outer_params_grid.values[idx])[8],
+            no_trend = list(outer_params_grid.values[idx])[9], beta_smoothing = list(outer_params_grid.values[idx])[10],
+            seasonality = list(outer_params_grid.values[idx])[11], subset = list(outer_params_grid.values[idx])[12])
+        
+        model_score_esrnn_subset_hyper["hyper"] = output_string
+        model_score_esrnn_subset_hyper["hyperidx"] = idx
+        model_score_esrnn_subset_hyper["epochs"] = hyper_epochs
+        
         #Featured data hyperparams
         if outer_params_grid['subset'][idx] == True:
             fcst_esrnn_subset, model_score_esrnn_ft_hyper = train_net(dat = datft, dte = dte, step = 1,
@@ -431,85 +429,112 @@ esrnn_epochs = 600
 
 if train_neural_net == True:
 
-    for i, dte_str in enumerate(dates[0:1]):
+    for i, dte_str in enumerate(dates):
         #dte_str = dates[0]; i = 1
         print(dte_str)
         dte = datetime.strptime(dte_str, "%Y-%m-%d")
-# =============================================================================
-#         fcst_y_only, model_score_y_only = train_y_only(dat = datr, 
-#                                                  dte = dte, 
-#                                                  step = i,
-#                                                  y_name = y_name,
-#                                                  verbose = True)
-#         
-#         
-#         fcst_stat, model_score_stat = train_stat(dat = datft, 
-#                                                  dte = dte, 
-#                                                  step = i,
-#                                                  y_name = y_name,
-#                                                  y_remove = y_remove,
-#                                                  run_vif = False,
-#                                                  run_fwd_selection = True,
-#                                                  read_vif_values = False,
-#                                                  read_subset_values = True,
-#                                                  read_pred_values=True,
-#                                                  verbose = True,
-#                                                  xtra_desc="stat",
-#                                                  max_subset_cols=30,
-#                                                  rss_cutoff=29)
-# =============================================================================
+        fcst_y_only, model_score_y_only = train_y_only(dat = datr, 
+                                                 dte = dte, 
+                                                 step = i,
+                                                 y_name = y_name,
+                                                 verbose = True)
         
-# =============================================================================
-#         fcst_gru, model_score_gru = train_net(dat = datr, dte = dte, step = i,
-#                                                 y_name = y_name, y_remove = y_remove,
-#                                                 read_vif_values = False, read_subset_values = False,
-#                                                 run_vif = False, run_fwd_selection=True,
-#                                                 num_epochs = 150, verbose = True,
-#                                                 read_pred_values=False,
-#                                                 learning_rate = 0.001,
-#                                                 num_layers = 2,
-#                                                 epoch_print = epoch_print,
-#                                                 model_name = "gru",
-#                                                 xtra_desc = "grusubset",
-#                                                 hidden_dim=16,
-#                                                 prune_prop=0.2,
-#                                                 dropout=0.4,
-#                                                 rss_cutoff=29)
-# =============================================================================
         
-# =============================================================================
-#         fcst_lstm, model_score_lstm = train_net(dat = datr, dte = dte, step = i,
-#                                                 y_name = y_name, y_remove = y_remove,
-#                                                 read_vif_values = False, read_subset_values = False,
-#                                                 run_vif = False, run_fwd_selection=True,
-#                                                 num_epochs = 175, verbose = True,
-#                                                 read_pred_values=False,
-#                                                 learning_rate = 0.001,
-#                                                 num_layers = 2,
-#                                                 epoch_print = epoch_print,
-#                                                 model_name = "lstm",
-#                                                 xtra_desc = "lstmsubset",
-#                                                 hidden_dim=16,
-#                                                 prune_prop=0.2,
-#                                                 dropout=0.4,
-#                                                 rss_cutoff=29)
-#         
-#         fcst_rnn, model_score_rnn = train_net(dat = datr, dte = dte, step = i,
-#                                                 y_name = y_name, y_remove = y_remove,
-#                                                 read_vif_values = False, read_subset_values = False,
-#                                                 run_vif = False, run_fwd_selection=True,
-#                                                 num_epochs = 200, verbose = True,
-#                                                 read_pred_values=False,
-#                                                 learning_rate = 0.001,
-#                                                 num_layers = 2,
-#                                                 epoch_print = epoch_print,
-#                                                 model_name = "rnn",
-#                                                 xtra_desc = "rnnsubset",
-#                                                 hidden_dim=16,
-#                                                 prune_prop=0.2,
-#                                                 dropout=0.4,
-#                                                 rss_cutoff=29)
-# =============================================================================
+        fcst_stat, model_score_stat = train_stat(dat = datft, 
+                                                 dte = dte, 
+                                                 step = i,
+                                                 y_name = y_name,
+                                                 y_remove = y_remove,
+                                                 run_vif = False,
+                                                 run_fwd_selection = True,
+                                                 read_vif_values = False,
+                                                 read_subset_values = False,
+                                                 read_pred_values=False,
+                                                 verbose = True,
+                                                 model_name = "ols",
+                                                 xtra_desc="stat",
+                                                 max_subset_cols=30,
+                                                 rss_cutoff=29)
+        
+        fcst_arima_sea, model_arima_sea = train_stat(dat = datft, 
+                                                 dte = dte, 
+                                                 step = i,
+                                                 y_name = y_name,
+                                                 y_remove = y_remove,
+                                                 run_vif = False,
+                                                 run_fwd_selection = True,
+                                                 read_vif_values = False,
+                                                 read_subset_values = False,
+                                                 read_pred_values=False,
+                                                 verbose = True,
+                                                 model_name = "arima_sea",
+                                                 xtra_desc="arima_sea",
+                                                 max_subset_cols=30,
+                                                 rss_cutoff=29)
+        
+        fcst_arima_xreg, model_arima_xreg = train_stat(dat = datft, 
+                                                 dte = dte, 
+                                                 step = i,
+                                                 y_name = y_name,
+                                                 y_remove = y_remove,
+                                                 run_vif = False,
+                                                 run_fwd_selection = True,
+                                                 read_vif_values = False,
+                                                 read_subset_values = False,
+                                                 read_pred_values=False,
+                                                 verbose = True,
+                                                 model_name = "arima_xreg",
+                                                 xtra_desc="arima_xreg",
+                                                 max_subset_cols=30,
+                                                 rss_cutoff=29)
+        
+        fcst_gru, model_score_gru = train_net(dat = datr, dte = dte, step = i,
+                                                y_name = y_name, y_remove = y_remove,
+                                                read_vif_values = False, read_subset_values = False,
+                                                run_vif = False, run_fwd_selection=True,
+                                                num_epochs = 150, verbose = True,
+                                                read_pred_values=False,
+                                                learning_rate = 0.001,
+                                                num_layers = 2,
+                                                epoch_print = epoch_print,
+                                                model_name = "gru",
+                                                xtra_desc = "grusubsettest",
+                                                hidden_dim=16,
+                                                prune_prop=0.2,
+                                                dropout=0.4,
+                                                rss_cutoff=29)
+        
+        fcst_lstm, model_score_lstm = train_net(dat = datr, dte = dte, step = i,
+                                                y_name = y_name, y_remove = y_remove,
+                                                read_vif_values = False, read_subset_values = False,
+                                                run_vif = False, run_fwd_selection=True,
+                                                num_epochs = 175, verbose = True,
+                                                read_pred_values=False,
+                                                learning_rate = 0.001,
+                                                num_layers = 2,
+                                                epoch_print = epoch_print,
+                                                model_name = "lstm",
+                                                xtra_desc = "lstmsubset",
+                                                hidden_dim=16,
+                                                prune_prop=0.2,
+                                                dropout=0.4,
+                                                rss_cutoff=29)
+        
+        fcst_rnn, model_score_rnn = train_net(dat = datr, dte = dte, step = i,
+                                                y_name = y_name, y_remove = y_remove,
+                                                read_vif_values = False, read_subset_values = False,
+                                                run_vif = False, run_fwd_selection=True,
+                                                num_epochs = 200, verbose = True,
+                                                read_pred_values=False,
+                                                learning_rate = 0.001,
+                                                num_layers = 2,
+                                                epoch_print = epoch_print,
+                                                model_name = "rnn",
+                                                xtra_desc = "rnnsubset",
+                                                hidden_dim=16,
+                                                prune_prop=0.2,
+                                                dropout=0.4,
+                                                rss_cutoff=29)
         
         fcst_esrnn_subset, model_score_esrnn_subset = train_net(dat = datft, dte = dte, step = i,
                                                 y_name = y_name, y_remove = y_remove,
@@ -518,39 +543,44 @@ if train_neural_net == True:
                                                 num_epochs = 200, 
                                                 verbose = True,
                                                 read_pred_values=True,
-                                                learning_rate = 0.01,
+                                                learning_rate = 0.001,
                                                 model_name = "esrnn",
-                                                xtra_desc = "ftsubset",
+                                                xtra_desc = "ftsubsettest",
                                                 epoch_print = epoch_print, 
-                                                esrnn_cell_type = "GRU",
+                                                esrnn_cell_type = "RNN",
                                                 esrnn_alpha_smoothing = 0.2,
                                                 esrnn_dilations = ((1, 3), (7, 14)),
                                                 output_pred_from_esrnn=False,
-                                                esrnn_no_trend=False,
+                                                esrnn_no_trend=True,
                                                 esrnn_beta_smoothing=0.2,
                                                 dropout=0.2,
                                                 hidden_dim=16,
                                                 num_layers=2,
                                                 prune_prop=0.2,
                                                 max_subset_cols=30,
-                                                rss_cutoff=29)
+                                                rss_cutoff=29, 
+                                                seasonality = 7)
     
         fcst_all = pd.concat([fcst_all, 
-                              #fcst_stat,
-                              #fcst_y_only,
-                              fcst_esrnn_subset
-                              #fcst_gru,
-                              #fcst_rnn,
-                              #fcst_lstm
+                              fcst_stat,
+                              fcst_arima_sea,
+                              fcst_arima_xreg,
+                              fcst_y_only,
+                              fcst_esrnn_subset,
+                              fcst_gru,
+                              fcst_rnn,
+                              fcst_lstm
                               ],axis = 0)
         
         model_score_all = pd.concat([model_score_all, 
-                                     #model_score_y_only,
-                                     model_score_esrnn_subset
-                                    # model_score_gru, 
-                                    # model_score_lstm,
-                                     #model_score_rnn,
-                                     #model_score_stat
+                                     model_arima_sea,
+                                     model_arima_xreg,
+                                     model_score_y_only,
+                                     model_score_esrnn_subset,
+                                     model_score_gru, 
+                                     model_score_lstm,
+                                     model_score_rnn,
+                                     model_score_stat
                                      ], axis = 0)
         
         model_score_all.to_csv("output/" + date.today().strftime("%Y%m%d") + y_name + "_model_score.csv")

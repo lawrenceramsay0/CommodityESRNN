@@ -306,8 +306,37 @@ class ESRNN(nn.Module):
         network_pred = self.series_forward(window_input_0)#[:-self.output_window_size])
         network_act = window_output
         
+        #Reduces the prediction dimension down to the series and number of observations 
+        #out_fcst_mean = torch.mean(network_pred, dim=2, keepdim=False)
+        #Amend 20/12/2023
+# =============================================================================
+#         out_fcst_mean_relu = self.relu(network_act)
+#         
+#         out_fcst_mean = out_fcst_mean_relu[:,:,:].reshape((out_fcst_mean_relu.shape[0],out_fcst_mean_relu.shape[2],out_fcst_mean_relu.shape[1]))
+#         # Check for NaN and infinite values
+#         nan_mask = torch.isnan(out_fcst_mean)
+#         inf_mask = torch.isinf(out_fcst_mean)
+#         
+#         # Create a combined mask to identify NaN and infinite values
+#         nan_inf_mask = nan_mask | inf_mask
+#         
+#         # Remove NaN and infinite values from the tensor
+#         mean_all = torch.median(out_fcst_mean[~nan_inf_mask])
+#         
+#         out_fcst_mean_nona = torch.nan_to_num(out_fcst_mean, nan = float(mean_all))
+#         out_series_mean_fc = self.fc(out_fcst_mean_nona)#.flatten()
+#         out_series_mean_nona = torch.nan_to_num(out_series_mean_fc, nan = float(mean_all))
+#         out_series_mean = torch.mean(out_series_mean_nona, dim = 1).flatten()
+#         
+#         out_pad = torch.nn.functional.pad(out_series_mean, (xt.shape[1] - out_fcst_mean_relu.shape[0], 0), \
+#                                           mode = "constant", value = float(out_series_mean[0])).reshape(-1, 1)
+# =============================================================================
+        
+        #Original 20/12/2023
         #Reduceds the prediction dimension down to the series and number of observations 
-        out_fcst_mean = torch.mean(network_pred, dim=2, keepdim=False)
+        #out_fcst_mean = torch.mean(network_pred, dim=2, keepdim=False)
+        out_fcst_mean = network_pred[:,:,1]
+        #out_fcst_mean_unwind = torch.nan_to_num(torch.exp(out_fcst_mean * levs_stacked[:, i].unsqueeze(1) * seasonalities_stacked[:, output_window_start:output_window_end]))
         
         #out_series_mean = torch.nanmean(out_fcst_mean, dim=1, keepdim=False)
         out_fcst_mean_relu = self.relu(out_fcst_mean)
@@ -318,10 +347,10 @@ class ESRNN(nn.Module):
         out_pad = torch.nn.functional.pad(out_series_mean, (xt.shape[1] - out_series_mean.shape[0], 0), \
                                           mode = "constant", value = float(out_series_mean[0])).reshape(-1, 1)
 
-            #hold_out_act = test if testing else val
-    
-            #hold_out_act_deseas = hold_out_act.float() / seasonalities_stacked[:, -self.config['output_size']:]
-            #hold_out_act_deseas_norm = hold_out_act_deseas / levs_stacked[:, -1].unsqueeze(1)
+        #hold_out_act = test if testing else val
+
+        #hold_out_act_deseas = hold_out_act.float() / seasonalities_stacked[:, -self.config['output_size']:]
+        #hold_out_act_deseas_norm = hold_out_act_deseas / levs_stacked[:, -1].unsqueeze(1)
         
 # =============================================================================
 #         # Initialize hidden state with zeros

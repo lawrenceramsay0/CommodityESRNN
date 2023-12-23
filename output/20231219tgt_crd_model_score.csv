@@ -1,2 +1,0 @@
-,model_name,step,dte,train_rmse,test_rmse,train_smape,test_smape,train_mase,test_mase
-esrnn_0_2022-12-01 00:00:00,esrnn_ftsubset,0,2022-12-01 00:00:00,13.005677377321366,12.931891806058143,13.977325790229886,15.273406447025767,0.15792286,0.16602701

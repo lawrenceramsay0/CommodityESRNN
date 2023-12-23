@@ -20,6 +20,7 @@ from itertools import product
 import numpy as np
 from error_metrics import smape
 from prep_data import prep_data
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 # function optimized to run on gpu 
 #@jit(target_backend='cuda')   
@@ -37,6 +38,7 @@ def train_stat(
             read_subset_values = False,
             val_days = 50,
             test_days = 50,
+            model_name = "ols",
             read_pred_values = False,
             run_corr_cutoff = False,
             read_corr_values = False,            
@@ -69,55 +71,102 @@ def train_stat(
                                                                    read_subset_values = read_subset_values, max_subset_cols = max_subset_cols,
                                                                    rss_cutoff = rss_cutoff) 
     
-# =============================================================================
-#     X_train, X_val, X_test, y_train, y_val, y_test = train_val_test_split_idx(df = dat, target_col = y_name, dte = dte,
-#                                                                               val_days = val_days, test_days = test_days)
-#     
-#     #Subset data 
-#     if run_corr_cutoff:
-#         X_train = corr_cutoff(X_train, y_train, read_corr_values = read_corr_values, verbose = verbose, dte = dte, 
-#                               xtra_desc = xtra_desc)
-#         
-#         X_test = X_test[X_train.columns]        
-#         X_val = X_val[X_train.columns] 
-#     
-#     if run_vif:
-#         X_train = vif_correlation_subset(X_train, read_vif_values = read_vif_values, verbose = verbose, dte = dte, 
-#                               xtra_desc = xtra_desc)
-#         
-#         X_test = X_test[X_train.columns]        
-#         X_val = X_val[X_train.columns] 
-# 
-#     if run_fwd_selection:
-#         X_train, reg_model, subsets = fwd_subset(X_train, y_train, y_name, verbose = verbose, dte = dte,
-#                                                  read_subset_values = read_subset_values, xtra_desc = xtra_desc)
-#         
-#         X_test = X_test[X_train.columns]
-#         X_val = X_val[X_train.columns]
-# 
-# 
-#     if read_pred_values:
-#         X_test_pred = pd.read_csv("data/" + dte.strftime("%Y%m%d") + xtra_desc + "_X_test_pred.csv", index_col = 0)
-# 
-#     else:
-#         X_test_pred = predict_features(X_train, X_test, test_days = test_days, verbose = verbose)
-#         X_test_pred.to_csv("data/" + dte.strftime("%Y%m%d") + xtra_desc + "_X_test_pred.csv")
-#         
-#     if verbose == True:
-#         print(dte)
-#         print("X_train: " + str(X_train.shape) + " " + str(min(X_train.index)) + ">" + str(max(X_train.index)))
-#         print("X_test: " + str(X_test.shape)+ " " + str(min(X_test.index)) + ">" + str(max(X_test.index)))
-#         print("X_val: " + str(X_val.shape)+ " " + str(min(X_val.index)) + ">" + str(max(X_val.index)))
-#         print("y_train: " + str(y_train.shape)+ " " + str(min(y_train.index)) + ">" + str(max(y_train.index)))
-#         print("y_test: " + str(y_test.shape)+ " " + str(min(y_test.index)) + ">" + str(max(y_test.index)))
-#         print("y_val: " + str(y_val.shape)+ " " + str(min(y_val.index)) + ">" + str(max(y_val.index)))
-# 
-# =============================================================================
-    model_name = "reg"
-    y_pred_train_reg = reg_model.predict(X_train) 
+    y_arima = y_train#X_train_dte[X_train.columns[i]]
+    
+    result = adfuller(y_arima.values)
+    p_value = result[1]
+    
+    if p_value > 0.05:  # If p-value is greater than 0.05, data is not stationary
+        d = 1  # Differencing is needed
+        diff_y = y_arima.diff(periods=d).dropna()
+    else:
+        d = 0  # Data is already stationary
+        diff_y = y_arima
+    
+    p = range(0, 3)  # Choose a range for p
+    d = range(0, 2)  # Choose a range for d
+    q = range(0, 3)  # Choose a range for q
+    
+    best_aic = np.inf
+    best_order = None
+    
+    for order in product(p, d, q):
+        try:
+            model = sm.tsa.ARIMA(diff_y, order=order)
+            results = model.fit()
+            aic = results.aic
+    
+            if aic < best_aic:
+                best_aic = aic
+                best_order = order
+        except:
+            continue
+        
+    y_arima = y_arima.set_index(pd.to_datetime(y_arima.index)).asfreq('d').ffill()
+    X_test_pred_d = X_test_pred.set_index(pd.to_datetime(X_test_pred.index)).asfreq('d').ffill()
+    X_train_d = X_train.set_index(pd.to_datetime(X_train.index)).asfreq('d').ffill()
+    
+    if verbose:
+        print("P Value SD Fuller:" + str(round(p_value,3)))
+        print("Best Order (p, d, q):", best_order)
+        print("Best AIC:", round(best_aic,0))
+    
+    if model_name == "ols":
 
-    y_pred_test_reg = reg_model.predict(X_test_pred) 
-    #y_pred_val_reg = reg_model.predict(X_val) 
+        y_pred_train_reg = reg_model.predict(X_train) 
+    
+        y_pred_test_reg = reg_model.predict(X_test_pred) 
+        #y_pred_val_reg = reg_model.predict(X_val) 
+    
+    elif model_name == "arima_sea":
+        
+        #https://machinelearningmastery.com/decompose-time-series-data-trend-seasonality/
+        try:
+            
+            yd = seasonal_decompose(y_arima, model='additive')
+            
+            model_sea = ARIMA(yd.seasonal, order=best_order)
+            model_fit_sea = model_sea.fit()
+            model_pred_sea = model_fit_sea.forecast(steps = int(X_test_pred_d.shape[0]), dates = X_test_pred.index)
+            
+            #trend = yd.trend.fillna(method='ffill').fillna(method='bfill')
+            model = ARIMA(y_arima, order=best_order, exog = yd.seasonal)
+            model_fit = model.fit()
+            model_pred = model_fit.forecast(steps = int(X_test_pred_d.shape[0]), dates = X_test_pred_d.index, exog = model_pred_sea, trend = 'nc')
+        
+        except:
+            
+            model = ARIMA(y_arima, order=best_order)
+            model_fit = model.fit()
+            model_pred = model_fit.forecast(steps = int(X_test_pred_d.shape[0]), dates = X_test_pred_d.index)
+            
+        y_pred_train_reg = model_fit.fittedvalues[model_fit.fittedvalues.index.isin(X_train.index)]
+        y_pred_test_reg = model_pred[model_pred.index.isin(X_test_pred.index)]
+        
+    elif model_name == "arima_xreg":
+
+            try:
+                yd = seasonal_decompose(y_arima, model='additive')
+                
+                model_sea = ARIMA(yd.seasonal, order=best_order)
+                model_fit_sea = model_sea.fit()
+                model_pred_sea = model_fit_sea.forecast(steps = int(X_test_pred_d.shape[0]), dates = X_test_pred.index)
+                
+                #trend = yd.trend.fillna(method='ffill').fillna(method='bfill')
+                model = ARIMA(y_arima, order=best_order, exog = pd.merge(yd.seasonal, X_train_d, right_index = True, left_index = True))
+                model_fit = model.fit()
+                model_pred = model_fit.forecast(steps = int(X_test_pred_d.shape[0]), dates = X_test_pred_d.index, 
+                                                exog = pd.merge(model_pred_sea, X_test_pred_d, left_index=True, right_index=True, how = 'right'))
+                
+            except:
+                
+                model = ARIMA(y_arima, order=best_order, exog = X_train_d)
+                model_fit = model.fit()
+                model_pred = model_fit.forecast(steps = int(X_test_pred_d.shape[0]), dates = X_test_pred_d.index, exog = X_test_pred_d)
+                
+            y_pred_train_reg = model_fit.fittedvalues[model_fit.fittedvalues.index.isin(X_train.index)]
+            y_pred_test_reg = model_pred[model_pred.index.isin(X_test_pred.index)]
+            
     
     train_rmse = math.sqrt(mean_squared_error(y_train, y_pred_train_reg))
     test_rmse = math.sqrt(mean_squared_error(y_test, y_pred_test_reg))

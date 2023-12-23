@@ -13,7 +13,7 @@ devtools::load_all()
 ```
 
 ```{r}
-fcst_all <- readr::read_csv("output/crude/20231216tgt_crd_fcst_all.csv", show_col_types = F) %>%
+fcst_all <- readr::read_csv("output/iron ore/20231216tgt_irn_fcst_all.csv", show_col_types = F) %>%
   setnames(., old = "...1", new = "idx") %>%
   data.table()
 
@@ -28,8 +28,8 @@ datft <- readr::read_csv("data/dat_ft.csv", show_col_types = F) %>%
   data.table()
 
 mod_rem <- unique(fcst_all$model_name)[!unique(fcst_all$model_name) %in% 
-                                         c("Arima_Best", "combined", "reg", "gru_grusubset", "esrnn_ftsubset",
-                                           "rnn_rnnsubset", "rnn_rnnsubset")] 
+                                         c("arima_sea", "combined", "reg", "gru_grusubset", "esrnn_ftsubset",
+                                           "rnn_rnnsubset", "arima_xreg")] 
 
 vis <-
   rbind(
@@ -59,8 +59,8 @@ vis <-
 
 plot_list <- list()
 
-model_names <- data.table(model_name_tech = c("Arima_Best", "combined", "reg", "rnn_rnnsubset", "esrnn_ftsubset"),
-                  model_name_pretty = c("ARIMA", "Combined", "OLS", "RNN", "ESRNN"))
+model_names <- data.table(model_name_tech = c("arima_xreg", "combined", "reg", "rnn_rnnsubset", "esrnn_ftsubset","arima_sea"),
+                  model_name_pretty = c("ARIMA Regressed", "Combined", "OLS", "RNN", "ESRNN", "ARIMA Seasonality"))
 
 for (mod in model_names$model_name_tech) {
   
